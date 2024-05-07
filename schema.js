@@ -20,7 +20,8 @@ const userSchema = new Schema({
     },
     passwordResetExpires: {
         type: Date
-    }
+    },
+    posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
 });
 
 const User = model('User', userSchema);
