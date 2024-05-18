@@ -16,6 +16,18 @@ const saltRounds = 10;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
+
+  jsonwebtoken.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
 app.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -66,7 +78,7 @@ app.post("/login", async (req, res) => {
 
     const payload = { userId: user._id };
     const secret = process.env.JWT_SECRET;
-    const token = jsonwebtoken.sign(payload, secret, { expiresIn: "1h" }); // Set an appropriate expiration time
+    const token = jsonwebtoken.sign(payload, secret, { expiresIn: "1hr" });
 
     res.status(200).json({
       message: "Login successful",
@@ -156,7 +168,7 @@ app.post("/reset-password/:resetToken", async (req, res) => {
   }
 });
 
-app.post("/users/:username/posts", async (req, res) => {
+app.post("/users/:username/posts", authenticateToken, async (req, res) => {
   try {
     const { username } = req.params;
     const { type, content, imageUrl, videoUrl, linkUrl } = req.body;
@@ -178,7 +190,7 @@ app.post("/users/:username/posts", async (req, res) => {
   }
 });
 
-app.get("/users/:username/posts", async (req, res) => {
+app.get("/users/:username/posts", authenticateToken, async (req, res) => {
   try {
     const { username } = req.params;
 
@@ -195,7 +207,7 @@ app.get("/users/:username/posts", async (req, res) => {
   }
 });
 
-app.put("/users/:username/posts/:postId", async (req, res) => {
+app.put("/users/:username/posts/:postId", authenticateToken, async (req, res) => {
   try {
     const { username, postId } = req.params;
     const { content, imageUrl, videoUrl, linkUrl } = req.body;
@@ -217,7 +229,7 @@ app.put("/users/:username/posts/:postId", async (req, res) => {
   }
 });
 
-app.delete("/users/:username/posts/:postId", async (req, res) => {
+app.delete("/users/:username/posts/:postId", authenticateToken, async (req, res) => {
   try {
     const { username, postId } = req.params;
     const user = await User.findOne({ username });
@@ -239,7 +251,7 @@ app.delete("/users/:username/posts/:postId", async (req, res) => {
   }
 });
 
-app.post("/users/:username/posts/:postId/like/:name", async (req, res) => {
+app.post("/users/:username/posts/:postId/like/:name", authenticateToken, async (req, res) => {
   try {
     const { username, postId, name } = req.params;
 
@@ -267,7 +279,7 @@ app.post("/users/:username/posts/:postId/like/:name", async (req, res) => {
   }
 });
 
-app.post("/users/:username/posts/:postId/comments/:name", async (req, res) => {
+app.post("/users/:username/posts/:postId/comments/:name", authenticateToken, async (req, res) => {
   try {
     const { username, postId, name } = req.params;
     const { text } = req.body;
